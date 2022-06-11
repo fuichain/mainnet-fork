@@ -653,7 +653,7 @@ func (b *SimulatedBackend) SendTransaction(ctx context.Context, tx *types.Transa
 	}
 	// Check transaction validity
 	signer := types.MakeSigner(b.blockchain.Config(), block.Number())
-	sender, err := types.Sender(signer, tx)
+	sender, err := types.Sender(signer, tx, block.Number())
 	if err != nil {
 		return fmt.Errorf("invalid transaction: %v", err)
 	}

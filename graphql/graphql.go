@@ -365,8 +365,12 @@ func (t *Transaction) From(ctx context.Context, args BlockNumberArgs) (*Account,
 	if err != nil || tx == nil {
 		return nil, err
 	}
-	signer := types.LatestSigner(t.backend.ChainConfig())
-	from, _ := types.Sender(signer, tx)
+	b, err := t.backend.BlockByNumberOrHash(ctx, args.NumberOrLatest())
+	if err != nil || tx == nil {
+		return nil, err
+	}
+	signer := types.LatestSigner(t.backend.ChainConfig(), b.Number())
+	from, _ := types.Sender(signer, tx, b.Number())
 	return &Account{
 		backend:       t.backend,
 		address:       from,
@@ -1308,7 +1312,11 @@ func (r *Resolver) MaxPriorityFeePerGas(ctx context.Context) (hexutil.Big, error
 }
 
 func (r *Resolver) ChainID(ctx context.Context) (hexutil.Big, error) {
-	return hexutil.Big(*r.backend.ChainConfig().ChainID), nil
+	if r.backend.ChainConfig().IsPoW(r.backend.CurrentHeader().Number) {
+		return hexutil.Big(*r.backend.ChainConfig().PoWChainID), nil
+	} else {
+		return hexutil.Big(*r.backend.ChainConfig().ChainID), nil
+	}
 }
 
 // SyncState represents the synchronisation status returned from the `syncing` accessor.

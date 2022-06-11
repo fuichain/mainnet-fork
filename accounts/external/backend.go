@@ -200,7 +200,7 @@ type signTransactionResult struct {
 // If chainID is nil, or tx.ChainID is zero, the chain ID will be assigned
 // by the external signer. For non-legacy transactions, the chain ID of the
 // transaction overrides the chainID parameter.
-func (api *ExternalSigner) SignTx(account accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
+func (api *ExternalSigner) SignTx(account accounts.Account, tx *types.Transaction, chainID *big.Int, blockNumber *big.Int) (*types.Transaction, error) {
 	data := hexutil.Bytes(tx.Data())
 	var to *common.MixedcaseAddress
 	if tx.To() != nil {
@@ -249,7 +249,7 @@ func (api *ExternalSigner) SignTextWithPassphrase(account accounts.Account, pass
 	return []byte{}, fmt.Errorf("password-operations not supported on external signers")
 }
 
-func (api *ExternalSigner) SignTxWithPassphrase(account accounts.Account, passphrase string, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
+func (api *ExternalSigner) SignTxWithPassphrase(account accounts.Account, passphrase string, tx *types.Transaction, chainID *big.Int, blockNumber *big.Int) (*types.Transaction, error) {
 	return nil, fmt.Errorf("password-operations not supported on external signers")
 }
 func (api *ExternalSigner) SignDataWithPassphrase(account accounts.Account, passphrase, mimeType string, data []byte) ([]byte, error) {

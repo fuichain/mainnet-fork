@@ -698,14 +698,14 @@ func (w *Wallet) signHash(account accounts.Account, hash []byte) ([]byte, error)
 // about which fields or actions are needed. The user may retry by providing
 // the needed details via SignTxWithPassphrase, or by other means (e.g. unlock
 // the account in a keystore).
-func (w *Wallet) SignTx(account accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
-	signer := types.LatestSignerForChainID(chainID)
-	hash := signer.Hash(tx)
+func (w *Wallet) SignTx(account accounts.Account, tx *types.Transaction, chainID *big.Int, blockNumber *big.Int) (*types.Transaction, error) {
+	signer := types.LatestSignerForChainID(func(blockNumber *big.Int) *big.Int { return chainID })
+	hash := signer.Hash(tx, blockNumber)
 	sig, err := w.signHash(account, hash[:])
 	if err != nil {
 		return nil, err
 	}
-	return tx.WithSignature(signer, sig)
+	return tx.WithSignature(signer, sig, blockNumber)
 }
 
 // SignDataWithPassphrase requests the wallet to sign the given hash with the
@@ -753,13 +753,13 @@ func (w *Wallet) SignTextWithPassphrase(account accounts.Account, passphrase str
 //
 // It looks up the account specified either solely via its address contained within,
 // or optionally with the aid of any location metadata from the embedded URL field.
-func (w *Wallet) SignTxWithPassphrase(account accounts.Account, passphrase string, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
+func (w *Wallet) SignTxWithPassphrase(account accounts.Account, passphrase string, tx *types.Transaction, chainID *big.Int, blockNumber *big.Int) (*types.Transaction, error) {
 	if !w.session.verified {
 		if err := w.Open(passphrase); err != nil {
 			return nil, err
 		}
 	}
-	return w.SignTx(account, tx, chainID)
+	return w.SignTx(account, tx, chainID, blockNumber)
 }
 
 // findAccountPath returns the derivation path for the provided account.

@@ -447,7 +447,7 @@ func (s *PrivateAccountAPI) signTransaction(ctx context.Context, args *Transacti
 	// Assemble the transaction and sign with the wallet
 	tx := args.toTransaction()
 
-	return wallet.SignTxWithPassphrase(account, passwd, tx, s.b.ChainConfig().ChainID)
+	return wallet.SignTxWithPassphrase(account, passwd, tx, s.b.ChainConfig().PoWChainID, s.b.CurrentHeader().Number)
 }
 
 // SendTransaction will create a transaction from the given arguments and
@@ -1234,7 +1234,7 @@ type RPCTransaction struct {
 // representation, with the given location metadata set (if available).
 func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber uint64, index uint64, baseFee *big.Int, config *params.ChainConfig) *RPCTransaction {
 	signer := types.MakeSigner(config, big.NewInt(0).SetUint64(blockNumber))
-	from, _ := types.Sender(signer, tx)
+	from, _ := types.Sender(signer, tx, big.NewInt(0).SetUint64(blockNumber))
 	v, r, s := tx.RawSignatureValues()
 	result := &RPCTransaction{
 		Type:     hexutil.Uint64(tx.Type()),
@@ -1429,7 +1429,7 @@ type PublicTransactionPoolAPI struct {
 func NewPublicTransactionPoolAPI(b Backend, nonceLock *AddrLocker) *PublicTransactionPoolAPI {
 	// The signer used by the API should always be the 'latest' known one because we expect
 	// signers to be backwards-compatible with old transactions.
-	signer := types.LatestSigner(b.ChainConfig())
+	signer := types.LatestSigner(b.ChainConfig(), b.CurrentHeader().Number)
 	return &PublicTransactionPoolAPI{b, nonceLock, signer}
 }
 
@@ -1560,7 +1560,7 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 	// Derive the sender.
 	bigblock := new(big.Int).SetUint64(blockNumber)
 	signer := types.MakeSigner(s.b.ChainConfig(), bigblock)
-	from, _ := types.Sender(signer, tx)
+	from, _ := types.Sender(signer, tx, bigblock)
 
 	fields := map[string]interface{}{
 		"blockHash":         blockHash,
@@ -1613,7 +1613,7 @@ func (s *PublicTransactionPoolAPI) sign(addr common.Address, tx *types.Transacti
 		return nil, err
 	}
 	// Request the wallet to sign the transaction
-	return wallet.SignTx(account, tx, s.b.ChainConfig().ChainID)
+	return wallet.SignTx(account, tx, s.b.ChainConfig().PoWChainID, s.b.CurrentHeader().Number)
 }
 
 // SubmitTransaction is a helper function that submits tx to txPool and logs a message.
@@ -1632,7 +1632,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 	}
 	// Print a log with full tx details for manual investigations and interventions
 	signer := types.MakeSigner(b.ChainConfig(), b.CurrentBlock().Number())
-	from, err := types.Sender(signer, tx)
+	from, err := types.Sender(signer, tx, b.CurrentBlock().Number())
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -1671,7 +1671,7 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Tra
 	// Assemble the transaction and sign with the wallet
 	tx := args.toTransaction()
 
-	signed, err := wallet.SignTx(account, tx, s.b.ChainConfig().ChainID)
+	signed, err := wallet.SignTx(account, tx, s.b.ChainConfig().PoWChainID, s.b.CurrentHeader().Number)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -1784,7 +1784,7 @@ func (s *PublicTransactionPoolAPI) PendingTransactions() ([]*RPCTransaction, err
 	curHeader := s.b.CurrentHeader()
 	transactions := make([]*RPCTransaction, 0, len(pending))
 	for _, tx := range pending {
-		from, _ := types.Sender(s.signer, tx)
+		from, _ := types.Sender(s.signer, tx, curHeader.Number)
 		if _, exists := accounts[from]; exists {
 			transactions = append(transactions, newRPCPendingTransaction(tx, curHeader, s.b.ChainConfig()))
 		}
@@ -1817,13 +1817,14 @@ func (s *PublicTransactionPoolAPI) Resend(ctx context.Context, sendArgs Transact
 	}
 	// Iterate the pending list for replacement
 	pending, err := s.b.GetPoolTransactions()
+	blockNumber := s.b.CurrentBlock().Number()
 	if err != nil {
 		return common.Hash{}, err
 	}
 	for _, p := range pending {
-		wantSigHash := s.signer.Hash(matchTx)
-		pFrom, err := types.Sender(s.signer, p)
-		if err == nil && pFrom == sendArgs.from() && s.signer.Hash(p) == wantSigHash {
+		wantSigHash := s.signer.Hash(matchTx, blockNumber)
+		pFrom, err := types.Sender(s.signer, p, blockNumber)
+		if err == nil && pFrom == sendArgs.from() && s.signer.Hash(p, blockNumber) == wantSigHash {
 			// Match. Re-sign and send the transaction.
 			if gasPrice != nil && (*big.Int)(gasPrice).Sign() != 0 {
 				sendArgs.GasPrice = gasPrice

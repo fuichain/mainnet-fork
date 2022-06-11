@@ -328,6 +328,8 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 		return g.Config
 	case ghash == params.MainnetGenesisHash:
 		return params.MainnetChainConfig
+	case ghash == params.PowstenGenesisHash:
+		return params.PowstenChainConfig
 	case ghash == params.RopstenGenesisHash:
 		return params.RopstenChainConfig
 	case ghash == params.SepoliaGenesisHash:
@@ -449,6 +451,18 @@ func DefaultGenesisBlock() *Genesis {
 func DefaultRopstenGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params.RopstenChainConfig,
+		Nonce:      66,
+		ExtraData:  hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
+		GasLimit:   16777216,
+		Difficulty: big.NewInt(1048576),
+		Alloc:      decodePrealloc(ropstenAllocData),
+	}
+}
+
+// DefaultPowstenGenesisBlock returns the Powsten network genesis block.
+func DefaultPowstenGenesisBlock() *Genesis {
+	return &Genesis{
+		Config:     params.PowstenChainConfig,
 		Nonce:      66,
 		ExtraData:  hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
 		GasLimit:   16777216,

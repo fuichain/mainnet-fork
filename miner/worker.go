@@ -592,10 +592,10 @@ func (w *worker) mainLoop() {
 				}
 				txs := make(map[common.Address]types.Transactions)
 				for _, tx := range ev.Txs {
-					acc, _ := types.Sender(w.current.signer, tx)
+					acc, _ := types.Sender(w.current.signer, tx, w.current.header.Number)
 					txs[acc] = append(txs[acc], tx)
 				}
-				txset := types.NewTransactionsByPriceAndNonce(w.current.signer, txs, w.current.header.BaseFee)
+				txset := types.NewTransactionsByPriceAndNonce(w.current.signer, txs, w.current.header.BaseFee, w.current.header.Number)
 				tcount := w.current.tcount
 				w.commitTransactions(w.current, txset, nil)
 
@@ -889,7 +889,7 @@ func (w *worker) commitTransactions(env *environment, txs *types.TransactionsByP
 		// during transaction acceptance is the transaction pool.
 		//
 		// We use the eip155 signer regardless of the current hf.
-		from, _ := types.Sender(env.signer, tx)
+		from, _ := types.Sender(env.signer, tx, env.header.Number)
 		// Check whether the tx is replay protected. If we're not in the EIP155 hf
 		// phase, start ignoring the sender until we do.
 		if tx.Protected() && !w.chainConfig.IsEIP155(env.header.Number) {
@@ -911,7 +911,7 @@ func (w *worker) commitTransactions(env *environment, txs *types.TransactionsByP
 		case errors.Is(err, core.ErrNonceTooLow):
 			// New head notification data race between the transaction pool and miner, shift
 			log.Trace("Skipping transaction with low nonce", "sender", from, "nonce", tx.Nonce())
-			txs.Shift()
+			txs.Shift(w.current.header.Number)
 
 		case errors.Is(err, core.ErrNonceTooHigh):
 			// Reorg notification data race between the transaction pool and miner, skip account =
@@ -922,7 +922,7 @@ func (w *worker) commitTransactions(env *environment, txs *types.TransactionsByP
 			// Everything ok, collect the logs and shift in the next transaction from the same account
 			coalescedLogs = append(coalescedLogs, logs...)
 			env.tcount++
-			txs.Shift()
+			txs.Shift(w.current.header.Number)
 
 		case errors.Is(err, core.ErrTxTypeNotSupported):
 			// Pop the unsupported transaction without shifting in the next from the account
@@ -933,7 +933,7 @@ func (w *worker) commitTransactions(env *environment, txs *types.TransactionsByP
 			// Strange error, discard the transaction and get the next in line (note, the
 			// nonce-too-high clause will prevent us from executing in vain).
 			log.Debug("Transaction failed, account skipped", "hash", tx.Hash(), "err", err)
-			txs.Shift()
+			txs.Shift(w.current.header.Number)
 		}
 	}
 
@@ -1069,13 +1069,13 @@ func (w *worker) fillTransactions(interrupt *int32, env *environment) error {
 		}
 	}
 	if len(localTxs) > 0 {
-		txs := types.NewTransactionsByPriceAndNonce(env.signer, localTxs, env.header.BaseFee)
+		txs := types.NewTransactionsByPriceAndNonce(env.signer, localTxs, env.header.BaseFee, env.header.Number)
 		if err := w.commitTransactions(env, txs, interrupt); err != nil {
 			return err
 		}
 	}
 	if len(remoteTxs) > 0 {
-		txs := types.NewTransactionsByPriceAndNonce(env.signer, remoteTxs, env.header.BaseFee)
+		txs := types.NewTransactionsByPriceAndNonce(env.signer, remoteTxs, env.header.BaseFee, env.header.Number)
 		if err := w.commitTransactions(env, txs, interrupt); err != nil {
 			return err
 		}

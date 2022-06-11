@@ -171,13 +171,13 @@ type benchmarkTxSend struct {
 func (b *benchmarkTxSend) init(h *serverHandler, count int) error {
 	key, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(key.PublicKey)
-	signer := types.LatestSigner(h.server.chainConfig)
+	signer := types.LatestSigner(h.server.chainConfig, h.blockchain.CurrentHeader().Number)
 	b.txs = make(types.Transactions, count)
 
 	for i := range b.txs {
 		data := make([]byte, txSizeCostLimit)
 		rand.Read(data)
-		tx, err := types.SignTx(types.NewTransaction(0, addr, new(big.Int), 0, new(big.Int), data), signer, key)
+		tx, err := types.SignTx(types.NewTransaction(0, addr, new(big.Int), 0, new(big.Int), data), signer, big.NewInt(1), key)
 		if err != nil {
 			panic(err)
 		}

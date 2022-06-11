@@ -158,7 +158,7 @@ func (w *ledgerDriver) Derive(path accounts.DerivationPath) (common.Address, err
 // Note, if the version of the Ethereum application running on the Ledger wallet is
 // too old to sign EIP-155 transactions, but such is requested nonetheless, an error
 // will be returned opposed to silently signing in Homestead mode.
-func (w *ledgerDriver) SignTx(path accounts.DerivationPath, tx *types.Transaction, chainID *big.Int) (common.Address, *types.Transaction, error) {
+func (w *ledgerDriver) SignTx(path accounts.DerivationPath, tx *types.Transaction, chainID *big.Int, blockNumber *big.Int) (common.Address, *types.Transaction, error) {
 	// If the Ethereum app doesn't run, abort
 	if w.offline() {
 		return common.Address{}, nil, accounts.ErrWalletClosed
@@ -169,7 +169,7 @@ func (w *ledgerDriver) SignTx(path accounts.DerivationPath, tx *types.Transactio
 		return common.Address{}, nil, fmt.Errorf("Ledger v%d.%d.%d doesn't support signing this transaction, please update to v1.0.3 at least", w.version[0], w.version[1], w.version[2])
 	}
 	// All infos gathered and metadata checks out, request signing
-	return w.ledgerSign(path, tx, chainID)
+	return w.ledgerSign(path, tx, func(blockNumber *big.Int) *big.Int { return blockNumber }, blockNumber)
 }
 
 // SignTypedMessage implements usbwallet.driver, sending the message to the Ledger and
@@ -319,7 +319,7 @@ func (w *ledgerDriver) ledgerDerive(derivationPath []uint32) (common.Address, er
 //   signature V | 1 byte
 //   signature R | 32 bytes
 //   signature S | 32 bytes
-func (w *ledgerDriver) ledgerSign(derivationPath []uint32, tx *types.Transaction, chainID *big.Int) (common.Address, *types.Transaction, error) {
+func (w *ledgerDriver) ledgerSign(derivationPath []uint32, tx *types.Transaction, chainID func(*big.Int) *big.Int, blockNumber *big.Int) (common.Address, *types.Transaction, error) {
 	// Flatten the derivation path into the Ledger request
 	path := make([]byte, 1+4*len(derivationPath))
 	path[0] = byte(len(derivationPath))
@@ -374,13 +374,13 @@ func (w *ledgerDriver) ledgerSign(derivationPath []uint32, tx *types.Transaction
 		signer = new(types.HomesteadSigner)
 	} else {
 		signer = types.NewEIP155Signer(chainID)
-		signature[64] -= byte(chainID.Uint64()*2 + 35)
+		signature[64] -= byte(chainID(blockNumber).Uint64()*2 + 35)
 	}
-	signed, err := tx.WithSignature(signer, signature)
+	signed, err := tx.WithSignature(signer, signature, blockNumber)
 	if err != nil {
 		return common.Address{}, nil, err
 	}
-	sender, err := types.Sender(signer, signed)
+	sender, err := types.Sender(signer, signed, blockNumber)
 	if err != nil {
 		return common.Address{}, nil, err
 	}

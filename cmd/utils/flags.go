@@ -156,6 +156,10 @@ var (
 		Name:  "rinkeby",
 		Usage: "Rinkeby network: pre-configured proof-of-authority test network",
 	}
+	PowstenFlag = cli.BoolFlag{
+		Name:  "powsten",
+		Usage: "Powsten network: pre-configured proof-of-work test network",
+	}
 	GoerliFlag = cli.BoolFlag{
 		Name:  "goerli",
 		Usage: "Görli network: pre-configured proof-of-authority test network",
@@ -831,6 +835,7 @@ var (
 	// TestnetFlags is the flag group of all built-in supported testnets.
 	TestnetFlags = []cli.Flag{
 		RopstenFlag,
+		PowstenFlag,
 		RinkebyFlag,
 		GoerliFlag,
 		SepoliaFlag,
@@ -863,7 +868,7 @@ func GroupFlags(groups ...[]cli.Flag) []cli.Flag {
 // then a subdirectory of the specified datadir will be used.
 func MakeDataDir(ctx *cli.Context) string {
 	if path := ctx.GlobalString(DataDirFlag.Name); path != "" {
-		if ctx.GlobalBool(RopstenFlag.Name) {
+		if ctx.GlobalBool(RopstenFlag.Name) || ctx.GlobalBool(PowstenFlag.Name) {
 			// Maintain compatibility with older Geth configurations storing the
 			// Ropsten database in `testnet` instead of `ropsten`.
 			return filepath.Join(path, "ropsten")
@@ -928,6 +933,8 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 		urls = SplitAndTrim(ctx.GlobalString(BootnodesFlag.Name))
 	case ctx.GlobalBool(RopstenFlag.Name):
 		urls = params.RopstenBootnodes
+	case ctx.GlobalBool(PowstenFlag.Name):
+		urls = params.PowstenBootnodes
 	case ctx.GlobalBool(SepoliaFlag.Name):
 		urls = params.SepoliaBootnodes
 	case ctx.GlobalBool(RinkebyFlag.Name):
@@ -1368,7 +1375,7 @@ func setDataDir(ctx *cli.Context, cfg *node.Config) {
 		cfg.DataDir = ctx.GlobalString(DataDirFlag.Name)
 	case ctx.GlobalBool(DeveloperFlag.Name):
 		cfg.DataDir = "" // unless explicitly requested, use memory databases
-	case ctx.GlobalBool(RopstenFlag.Name) && cfg.DataDir == node.DefaultDataDir():
+	case (ctx.GlobalBool(RopstenFlag.Name) || ctx.GlobalBool(PowstenFlag.Name)) && cfg.DataDir == node.DefaultDataDir():
 		// Maintain compatibility with older Geth configurations storing the
 		// Ropsten database in `testnet` instead of `ropsten`.
 		legacyPath := filepath.Join(node.DefaultDataDir(), "testnet")
@@ -1578,7 +1585,7 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
-	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, RopstenFlag, RinkebyFlag, GoerliFlag, SepoliaFlag, KilnFlag)
+	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, RopstenFlag, PowstenFlag, RinkebyFlag, GoerliFlag, SepoliaFlag, KilnFlag)
 	CheckExclusive(ctx, LightServeFlag, SyncModeFlag, "light")
 	CheckExclusive(ctx, DeveloperFlag, ExternalSignerFlag) // Can't use both ephemeral unlocked and external signer
 	if ctx.GlobalString(GCModeFlag.Name) == "archive" && ctx.GlobalUint64(TxLookupLimitFlag.Name) != 0 {
@@ -1722,6 +1729,12 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		}
 		cfg.Genesis = core.DefaultRopstenGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.RopstenGenesisHash)
+	case ctx.GlobalBool(PowstenFlag.Name):
+		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = 3
+		}
+		cfg.Genesis = core.DefaultPowstenGenesisBlock()
+		SetDNSDiscoveryDefaults(cfg, params.PowstenGenesisHash)
 	case ctx.GlobalBool(SepoliaFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = 11155111
@@ -1990,6 +2003,8 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 		genesis = core.DefaultGenesisBlock()
 	case ctx.GlobalBool(RopstenFlag.Name):
 		genesis = core.DefaultRopstenGenesisBlock()
+	case ctx.GlobalBool(PowstenFlag.Name):
+		genesis = core.DefaultPowstenGenesisBlock()
 	case ctx.GlobalBool(SepoliaFlag.Name):
 		genesis = core.DefaultSepoliaGenesisBlock()
 	case ctx.GlobalBool(RinkebyFlag.Name):

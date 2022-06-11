@@ -271,7 +271,8 @@ func prepare(ctx *cli.Context) {
 	switch {
 	case ctx.GlobalIsSet(utils.RopstenFlag.Name):
 		log.Info("Starting Geth on Ropsten testnet...")
-
+	case ctx.GlobalIsSet(utils.PowstenFlag.Name):
+		log.Info("Starting Geth on Powsten testnet...")
 	case ctx.GlobalIsSet(utils.RinkebyFlag.Name):
 		log.Info("Starting Geth on Rinkeby testnet...")
 
@@ -309,6 +310,7 @@ func prepare(ctx *cli.Context) {
 	if ctx.GlobalString(utils.SyncModeFlag.Name) != "light" && !ctx.GlobalIsSet(utils.CacheFlag.Name) && !ctx.GlobalIsSet(utils.NetworkIdFlag.Name) {
 		// Make sure we're not on any supported preconfigured testnet either
 		if !ctx.GlobalIsSet(utils.RopstenFlag.Name) &&
+			!ctx.GlobalIsSet(utils.PowstenFlag.Name) &&
 			!ctx.GlobalIsSet(utils.SepoliaFlag.Name) &&
 			!ctx.GlobalIsSet(utils.RinkebyFlag.Name) &&
 			!ctx.GlobalIsSet(utils.GoerliFlag.Name) &&
