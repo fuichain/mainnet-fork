@@ -162,6 +162,12 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 	if ctx.GlobalIsSet(utils.OverrideTerminalTotalDifficulty.Name) {
 		cfg.Eth.OverrideTerminalTotalDifficulty = utils.GlobalBig(ctx, utils.OverrideTerminalTotalDifficulty.Name)
 	}
+	if ctx.GlobalIsSet(utils.OverridePoWBlock.Name) {
+		cfg.Eth.OverridePoWBlock = utils.GlobalBig(ctx, utils.OverridePoWBlock.Name)
+	}
+	if ctx.GlobalIsSet(utils.OverridePoWChainID.Name) {
+		cfg.Eth.OverridePoWChainID = utils.GlobalBig(ctx, utils.OverridePoWChainID.Name)
+	}
 	backend, eth := utils.RegisterEthService(stack, &cfg.Eth)
 	// Warn users to migrate if they have a legacy freezer format.
 	if eth != nil {

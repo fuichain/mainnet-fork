@@ -210,6 +210,9 @@ type Config struct {
 
 	// OverrideTerminalTotalDifficulty (TODO: remove after the fork)
 	OverrideTerminalTotalDifficulty *big.Int `toml:",omitempty"`
+
+	OverridePoWChainID *big.Int `toml:",omitempty"`
+	OverridePoWBlock   *big.Int `toml:",omitempty"`
 }
 
 // CreateConsensusEngine creates a consensus engine for the given chain configuration.

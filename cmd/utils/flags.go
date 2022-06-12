@@ -269,6 +269,14 @@ var (
 		Name:  "override.terminaltotaldifficulty",
 		Usage: "Manually specify TerminalTotalDifficulty, overriding the bundled setting",
 	}
+	OverridePoWChainID = BigFlag{
+		Name:  "override.powchainid",
+		Usage: "Manually specify PoWChainID, overriding the bundled setting",
+	}
+	OverridePoWBlock = BigFlag{
+		Name:  "override.powblock",
+		Usage: "Manually specify PoWBlock, overriding the bundled setting",
+	}
 	// Light server and client settings
 	LightServeFlag = cli.IntFlag{
 		Name:  "light.serve",
