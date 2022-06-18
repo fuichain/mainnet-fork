@@ -85,7 +85,7 @@ func init() {
 		Epoch:  30000,
 	}
 
-	signer := types.LatestSigner(params.TestChainConfig)
+	signer := types.LatestSigner(params.TestChainConfig, new(big.Int))
 	tx1 := types.MustSignNewTx(testBankKey, signer, &types.AccessListTx{
 		ChainID:  params.TestChainConfig.ChainID,
 		Nonce:    0,
@@ -93,7 +93,7 @@ func init() {
 		Value:    big.NewInt(1000),
 		Gas:      params.TxGas,
 		GasPrice: big.NewInt(params.InitialBaseFee),
-	})
+	}, new(big.Int))
 	pendingTxs = append(pendingTxs, tx1)
 
 	tx2 := types.MustSignNewTx(testBankKey, signer, &types.LegacyTx{
@@ -102,7 +102,7 @@ func init() {
 		Value:    big.NewInt(1000),
 		Gas:      params.TxGas,
 		GasPrice: big.NewInt(params.InitialBaseFee),
-	})
+	}, new(big.Int))
 	newTxs = append(newTxs, tx2)
 
 	rand.Seed(time.Now().UnixNano())
@@ -192,9 +192,9 @@ func (b *testWorkerBackend) newRandomTx(creation bool) *types.Transaction {
 	var tx *types.Transaction
 	gasPrice := big.NewInt(10 * params.InitialBaseFee)
 	if creation {
-		tx, _ = types.SignTx(types.NewContractCreation(b.txPool.Nonce(testBankAddress), big.NewInt(0), testGas, gasPrice, common.FromHex(testCode)), types.HomesteadSigner{}, testBankKey)
+		tx, _ = types.SignTx(types.NewContractCreation(b.txPool.Nonce(testBankAddress), big.NewInt(0), testGas, gasPrice, common.FromHex(testCode)), types.HomesteadSigner{}, new(big.Int), testBankKey)
 	} else {
-		tx, _ = types.SignTx(types.NewTransaction(b.txPool.Nonce(testBankAddress), testUserAddress, big.NewInt(1000), params.TxGas, gasPrice, nil), types.HomesteadSigner{}, testBankKey)
+		tx, _ = types.SignTx(types.NewTransaction(b.txPool.Nonce(testBankAddress), testUserAddress, big.NewInt(1000), params.TxGas, gasPrice, nil), types.HomesteadSigner{}, new(big.Int), testBankKey)
 	}
 	return tx
 }

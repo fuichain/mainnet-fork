@@ -154,9 +154,11 @@ func genTxs(num uint64) (types.Transactions, error) {
 	}
 	var addr = crypto.PubkeyToAddress(key.PublicKey)
 	newTx := func(i uint64) (*types.Transaction, error) {
-		signer := types.NewEIP155Signer(big.NewInt(18))
+		signer := types.NewEIP155Signer(func(blockNumber *big.Int) *big.Int {
+			return big.NewInt(18)
+		})
 		utx := types.NewTransaction(i, addr, new(big.Int), 0, new(big.Int).SetUint64(10000000), nil)
-		tx, err := types.SignTx(utx, signer, key)
+		tx, err := types.SignTx(utx, signer, new(big.Int), key)
 		return tx, err
 	}
 	var txs types.Transactions

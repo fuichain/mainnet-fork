@@ -163,7 +163,7 @@ func testCallTracer(tracerName string, dirPath string, t *testing.T) {
 			// Configure a blockchain with the given prestate
 			var (
 				signer    = types.MakeSigner(test.Genesis.Config, new(big.Int).SetUint64(uint64(test.Context.Number)))
-				origin, _ = signer.Sender(tx)
+				origin, _ = signer.Sender(tx, new(big.Int))
 				txContext = vm.TxContext{
 					Origin:   origin,
 					GasPrice: tx.GasPrice(),
@@ -184,7 +184,7 @@ func testCallTracer(tracerName string, dirPath string, t *testing.T) {
 				t.Fatalf("failed to create call tracer: %v", err)
 			}
 			evm := vm.NewEVM(context, txContext, statedb, test.Genesis.Config, vm.Config{Debug: true, Tracer: tracer})
-			msg, err := tx.AsMessage(signer, nil)
+			msg, err := tx.AsMessage(signer, nil, new(big.Int))
 			if err != nil {
 				t.Fatalf("failed to prepare transaction for tracing: %v", err)
 			}
@@ -270,11 +270,11 @@ func benchTracer(tracerName string, test *callTracerTest, b *testing.B) {
 		b.Fatalf("failed to parse testcase input: %v", err)
 	}
 	signer := types.MakeSigner(test.Genesis.Config, new(big.Int).SetUint64(uint64(test.Context.Number)))
-	msg, err := tx.AsMessage(signer, nil)
+	msg, err := tx.AsMessage(signer, nil, new(big.Int))
 	if err != nil {
 		b.Fatalf("failed to prepare transaction for tracing: %v", err)
 	}
-	origin, _ := signer.Sender(tx)
+	origin, _ := signer.Sender(tx, new(big.Int))
 	txContext := vm.TxContext{
 		Origin:   origin,
 		GasPrice: tx.GasPrice(),
@@ -319,16 +319,18 @@ func TestZeroValueToNotExitCall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err %v", err)
 	}
-	signer := types.NewEIP155Signer(big.NewInt(1))
+	signer := types.NewEIP155Signer(func(blockNumber *big.Int) *big.Int {
+		return big.NewInt(1)
+	})
 	tx, err := types.SignNewTx(privkey, signer, &types.LegacyTx{
 		GasPrice: big.NewInt(0),
 		Gas:      50000,
 		To:       &to,
-	})
+	}, new(big.Int))
 	if err != nil {
 		t.Fatalf("err %v", err)
 	}
-	origin, _ := signer.Sender(tx)
+	origin, _ := signer.Sender(tx, new(big.Int))
 	txContext := vm.TxContext{
 		Origin:   origin,
 		GasPrice: big.NewInt(1),
@@ -364,7 +366,7 @@ func TestZeroValueToNotExitCall(t *testing.T) {
 		t.Fatalf("failed to create call tracer: %v", err)
 	}
 	evm := vm.NewEVM(context, txContext, statedb, params.MainnetChainConfig, vm.Config{Debug: true, Tracer: tracer})
-	msg, err := tx.AsMessage(signer, nil)
+	msg, err := tx.AsMessage(signer, nil, new(big.Int))
 	if err != nil {
 		t.Fatalf("failed to prepare transaction for tracing: %v", err)
 	}

@@ -104,7 +104,7 @@ func newTestBackend(t *testing.T, londonBlock *big.Int, pending bool) *testBacke
 			Config: &config,
 			Alloc:  core.GenesisAlloc{addr: {Balance: big.NewInt(math.MaxInt64)}},
 		}
-		signer = types.LatestSigner(gspec.Config)
+		signer = types.LatestSigner(gspec.Config, big.NewInt(2))
 	)
 	config.LondonBlock = londonBlock
 	config.ArrowGlacierBlock = londonBlock
@@ -139,7 +139,7 @@ func newTestBackend(t *testing.T, londonBlock *big.Int, pending bool) *testBacke
 				Data:     []byte{},
 			}
 		}
-		b.AddTx(types.MustSignNewTx(key, signer, txdata))
+		b.AddTx(types.MustSignNewTx(key, signer, txdata, big.NewInt(2)))
 	})
 	// Construct testing chain
 	diskdb := rawdb.NewMemoryDatabase()

@@ -21,6 +21,7 @@ package geth
 
 import (
 	"errors"
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts"
@@ -120,7 +121,7 @@ func (ks *KeyStore) SignTx(account *Account, tx *Transaction, chainID *BigInt) (
 	if chainID == nil { // Null passed from mobile app
 		chainID = new(BigInt)
 	}
-	signed, err := ks.keystore.SignTx(account.account, tx.tx, chainID.bigint)
+	signed, err := ks.keystore.SignTx(account.account, tx.tx, new(big.Int), chainID.bigint)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +141,7 @@ func (ks *KeyStore) SignTxPassphrase(account *Account, passphrase string, tx *Tr
 	if chainID == nil { // Null passed from mobile app
 		chainID = new(BigInt)
 	}
-	signed, err := ks.keystore.SignTxWithPassphrase(account.account, passphrase, tx.tx, chainID.bigint)
+	signed, err := ks.keystore.SignTxWithPassphrase(account.account, passphrase, tx.tx, chainID.bigint, new(big.Int))
 	if err != nil {
 		return nil, err
 	}

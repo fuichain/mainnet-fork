@@ -19,6 +19,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -44,7 +45,7 @@ func (l *AuditLogger) New(ctx context.Context) (common.Address, error) {
 	return l.api.New(ctx)
 }
 
-func (l *AuditLogger) SignTransaction(ctx context.Context, args apitypes.SendTxArgs, methodSelector *string) (*ethapi.SignTransactionResult, error) {
+func (l *AuditLogger) SignTransaction(ctx context.Context, args apitypes.SendTxArgs, methodSelector *string, blockNumber *big.Int) (*ethapi.SignTransactionResult, error) {
 	sel := "<nil>"
 	if methodSelector != nil {
 		sel = *methodSelector
@@ -53,7 +54,7 @@ func (l *AuditLogger) SignTransaction(ctx context.Context, args apitypes.SendTxA
 		"tx", args.String(),
 		"methodSelector", sel)
 
-	res, e := l.api.SignTransaction(ctx, args, methodSelector)
+	res, e := l.api.SignTransaction(ctx, args, methodSelector, blockNumber)
 	if res != nil {
 		l.log.Info("SignTransaction", "type", "response", "data", common.Bytes2Hex(res.Raw), "error", e)
 	} else {

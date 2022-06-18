@@ -51,14 +51,16 @@ func BenchmarkTransactionTrace(b *testing.B) {
 	from := crypto.PubkeyToAddress(key.PublicKey)
 	gas := uint64(1000000) // 1M gas
 	to := common.HexToAddress("0x00000000000000000000000000000000deadbeef")
-	signer := types.LatestSignerForChainID(big.NewInt(1337))
+	signer := types.LatestSignerForChainID(func(b *big.Int) *big.Int {
+		return big.NewInt(1337)
+	})
 	tx, err := types.SignNewTx(key, signer,
 		&types.LegacyTx{
 			Nonce:    1,
 			GasPrice: big.NewInt(500),
 			Gas:      gas,
 			To:       &to,
-		})
+		}, new(big.Int))
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -103,7 +105,7 @@ func BenchmarkTransactionTrace(b *testing.B) {
 		//EnableReturnData: false,
 	})
 	evm := vm.NewEVM(context, txContext, statedb, params.AllEthashProtocolChanges, vm.Config{Debug: true, Tracer: tracer})
-	msg, err := tx.AsMessage(signer, nil)
+	msg, err := tx.AsMessage(signer, nil, new(big.Int))
 	if err != nil {
 		b.Fatalf("failed to prepare transaction for tracing: %v", err)
 	}

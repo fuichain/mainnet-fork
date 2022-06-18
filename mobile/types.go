@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -302,9 +303,11 @@ func (tx *Transaction) GetTo() *Address {
 func (tx *Transaction) WithSignature(sig []byte, chainID *BigInt) (signedTx *Transaction, _ error) {
 	var signer types.Signer = types.HomesteadSigner{}
 	if chainID != nil {
-		signer = types.NewEIP155Signer(chainID.bigint)
+		signer = types.NewEIP155Signer(func(blockNumber *big.Int) *big.Int {
+			return chainID.bigint
+		})
 	}
-	rawTx, err := tx.tx.WithSignature(signer, common.CopyBytes(sig))
+	rawTx, err := tx.tx.WithSignature(signer, common.CopyBytes(sig), new(big.Int))
 	return &Transaction{rawTx}, err
 }
 

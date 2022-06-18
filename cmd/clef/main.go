@@ -932,7 +932,7 @@ func testExternalUI(api *core.SignerAPI) {
 			Gas:      1000,
 			Input:    nil,
 		}
-		_, err := api.SignTransaction(ctx, tx, nil)
+		_, err := api.SignTransaction(ctx, tx, nil, new(big.Int))
 		expectDeny("signtransaction [1]", err)
 		expectResponse("signtransaction [2]", "Did you see any warnings for the last transaction? (yes/no)", "no")
 	}

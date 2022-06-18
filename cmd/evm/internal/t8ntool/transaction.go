@@ -131,7 +131,7 @@ func Transaction(ctx *cli.Context) error {
 			continue
 		}
 		r := result{Hash: tx.Hash()}
-		if sender, err := types.Sender(signer, &tx); err != nil {
+		if sender, err := types.Sender(signer, &tx, new(big.Int)); err != nil {
 			r.Error = err
 			results = append(results, r)
 			continue

@@ -355,9 +355,9 @@ func signUnsignedTransactions(txs []*txWithKey, signer types.Signer) (types.Tran
 				err    error
 			)
 			if txWithKey.protected {
-				signed, err = types.SignTx(tx, signer, key)
+				signed, err = types.SignTx(tx, signer, new(big.Int), key)
 			} else {
-				signed, err = types.SignTx(tx, types.FrontierSigner{}, key)
+				signed, err = types.SignTx(tx, types.FrontierSigner{}, new(big.Int), key)
 			}
 			if err != nil {
 				return nil, NewError(ErrorJson, fmt.Errorf("tx %d: failed to sign tx: %v", i, err))

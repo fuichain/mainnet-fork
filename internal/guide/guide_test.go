@@ -74,14 +74,14 @@ func TestAccountManagement(t *testing.T) {
 	chain := big.NewInt(1)
 
 	// Sign a transaction with a single authorization
-	if _, err := ks.SignTxWithPassphrase(signer, "Signer password", tx, chain); err != nil {
+	if _, err := ks.SignTxWithPassphrase(signer, "Signer password", tx, new(big.Int), chain); err != nil {
 		t.Fatalf("Failed to sign with passphrase: %v", err)
 	}
 	// Sign a transaction with multiple manually cancelled authorizations
 	if err := ks.Unlock(signer, "Signer password"); err != nil {
 		t.Fatalf("Failed to unlock account: %v", err)
 	}
-	if _, err := ks.SignTx(signer, tx, chain); err != nil {
+	if _, err := ks.SignTx(signer, tx, chain, new(big.Int)); err != nil {
 		t.Fatalf("Failed to sign with unlocked account: %v", err)
 	}
 	if err := ks.Lock(signer.Address); err != nil {
@@ -91,7 +91,7 @@ func TestAccountManagement(t *testing.T) {
 	if err := ks.TimedUnlock(signer, "Signer password", time.Second); err != nil {
 		t.Fatalf("Failed to time unlock account: %v", err)
 	}
-	if _, err := ks.SignTx(signer, tx, chain); err != nil {
+	if _, err := ks.SignTx(signer, tx, chain, new(big.Int)); err != nil {
 		t.Fatalf("Failed to sign with time unlocked account: %v", err)
 	}
 }

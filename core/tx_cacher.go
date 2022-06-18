@@ -68,7 +68,10 @@ func newTxSenderCacher(threads int) *txSenderCacher {
 func (cacher *txSenderCacher) cache() {
 	for task := range cacher.tasks {
 		for i := 0; i < len(task.txs); i += task.inc {
-			types.Sender(task.signer, task.txs[i].tx, task.txs[i].blockNumber)
+			currentTx := task.txs[i]
+			if currentTx != nil {
+				types.Sender(task.signer, currentTx.tx, currentTx.blockNumber)
+			}
 		}
 	}
 }
