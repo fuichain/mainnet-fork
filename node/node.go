@@ -27,7 +27,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -43,7 +42,6 @@ import (
 type Node struct {
 	eventmux      *event.TypeMux
 	config        *Config
-	accman        *accounts.Manager
 	log           log.Logger
 	keyDir        string            // key store directory
 	keyDirTemp    bool              // If true, key directory will be removed by Stop
@@ -124,9 +122,6 @@ func New(conf *Config) (*Node, error) {
 	}
 	node.keyDir = keyDir
 	node.keyDirTemp = isEphem
-	// Creates an empty AccountManager with no backends. Callers (e.g. cmd/geth)
-	// are required to add the backends later on.
-	node.accman = accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: conf.InsecureUnlockAllowed})
 
 	// Initialize the p2p server. This creates the node key and discovery databases.
 	node.server.Config.PrivateKey = node.config.NodeKey()
@@ -239,9 +234,6 @@ func (n *Node) doClose(errs []error) error {
 	errs = append(errs, n.closeDatabases()...)
 	n.lock.Unlock()
 
-	if err := n.accman.Close(); err != nil {
-		errs = append(errs, err)
-	}
 	if n.keyDirTemp {
 		if err := os.RemoveAll(n.keyDir); err != nil {
 			errs = append(errs, err)
@@ -641,11 +633,6 @@ func (n *Node) InstanceDir() string {
 // KeyStoreDir retrieves the key directory
 func (n *Node) KeyStoreDir() string {
 	return n.keyDir
-}
-
-// AccountManager retrieves the account manager used by the protocol stack.
-func (n *Node) AccountManager() *accounts.Manager {
-	return n.accman
 }
 
 // IPCEndpoint retrieves the current IPC endpoint used by the protocol stack.
