@@ -78,7 +78,6 @@ var (
 	errCanceled                = errors.New("syncing canceled (requested)")
 	errTooOld                  = errors.New("peer's protocol version too old")
 	errNoAncestorFound         = errors.New("no common ancestor found")
-	errNoPivotHeader           = errors.New("pivot header is not found")
 )
 
 // peerDropFn is a callback type for dropping a peer detected as malicious.
@@ -418,8 +417,7 @@ func (d *Downloader) synchronise(id string, hash common.Hash, td *big.Int, mode 
 	atomic.StoreUint32(&d.mode, uint32(mode))
 
 	// Retrieve the origin peer and initiate the downloading process
-	var p *peerConnection
-	p = d.peers.Peer(id)
+	p := d.peers.Peer(id)
 	if p == nil {
 		return errUnknownPeer
 	}
@@ -1178,17 +1176,13 @@ func (d *Downloader) processHeaders(origin uint64, td *big.Int) error {
 	)
 	defer func() {
 		if rollback > 0 {
-			lastHeader, lastFastBlock, lastBlock := d.lightchain.CurrentHeader().Number, common.Big0, common.Big0
-			lastFastBlock = d.blockchain.CurrentFastBlock().Number()
-			lastBlock = d.blockchain.CurrentBlock().Number()
+			lastHeader, lastFastBlock, lastBlock := d.lightchain.CurrentHeader().Number, d.blockchain.CurrentFastBlock().Number(), d.blockchain.CurrentBlock().Number()
 
 			if err := d.lightchain.SetHead(rollback - 1); err != nil { // -1 to target the parent of the first uncertain block
 				// We're already unwinding the stack, only print the error to make it more visible
 				log.Error("Failed to roll back chain segment", "head", rollback-1, "err", err)
 			}
-			curFastBlock, curBlock := common.Big0, common.Big0
-			curFastBlock = d.blockchain.CurrentFastBlock().Number()
-			curBlock = d.blockchain.CurrentBlock().Number()
+			curFastBlock, curBlock := d.blockchain.CurrentFastBlock().Number(), d.blockchain.CurrentBlock().Number()
 
 			log.Warn("Rolled back chain segment",
 				"header", fmt.Sprintf("%d->%d", lastHeader, d.lightchain.CurrentHeader().Number),

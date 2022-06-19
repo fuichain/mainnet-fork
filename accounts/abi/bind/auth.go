@@ -22,9 +22,6 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/external"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -35,29 +32,6 @@ var ErrNoChainID = errors.New("no chain id specified")
 
 // ErrNotAuthorized is returned when an account is not properly unlocked.
 var ErrNotAuthorized = errors.New("not authorized to sign this account")
-
-// NewKeyStoreTransactorWithChainID is a utility method to easily create a transaction signer from
-// an decrypted key from a keystore.
-func NewKeyStoreTransactorWithChainID(keystore *keystore.KeyStore, account accounts.Account, chainID *big.Int, blockNumber *big.Int) (*TransactOpts, error) {
-	if chainID == nil {
-		return nil, ErrNoChainID
-	}
-	signer := types.LatestSignerForChainID(func(*big.Int) *big.Int { return chainID })
-	return &TransactOpts{
-		From: account.Address,
-		Signer: func(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
-			if address != account.Address {
-				return nil, ErrNotAuthorized
-			}
-			signature, err := keystore.SignHash(account, signer.Hash(tx, blockNumber).Bytes())
-			if err != nil {
-				return nil, err
-			}
-			return tx.WithSignature(signer, signature, blockNumber)
-		},
-		Context: context.Background(),
-	}, nil
-}
 
 // NewKeyedTransactorWithChainID is a utility method to easily create a transaction signer
 // from a single private key.
@@ -81,19 +55,4 @@ func NewKeyedTransactorWithChainID(key *ecdsa.PrivateKey, chainID *big.Int, bloc
 		},
 		Context: context.Background(),
 	}, nil
-}
-
-// NewClefTransactor is a utility method to easily create a transaction signer
-// with a clef backend.
-func NewClefTransactor(clef *external.ExternalSigner, account accounts.Account) *TransactOpts {
-	return &TransactOpts{
-		From: account.Address,
-		Signer: func(address common.Address, transaction *types.Transaction) (*types.Transaction, error) {
-			if address != account.Address {
-				return nil, ErrNotAuthorized
-			}
-			return clef.SignTx(account, transaction, nil, new(big.Int)) // Clef enforces its own chain id
-		},
-		Context: context.Background(),
-	}
 }

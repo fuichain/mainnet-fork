@@ -24,9 +24,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/console/prompt"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/dnsdisc"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"gopkg.in/urfave/cli.v1"
@@ -150,10 +149,10 @@ func dnsSign(ctx *cli.Context) error {
 		return fmt.Errorf("need tree definition directory and key file as arguments")
 	}
 	var (
-		defdir  = ctx.Args().Get(0)
-		keyfile = ctx.Args().Get(1)
-		def     = loadTreeDefinition(defdir)
-		domain  = directoryName(defdir)
+		defdir = ctx.Args().Get(0)
+		keyStr = ctx.Args().Get(1)
+		def    = loadTreeDefinition(defdir)
+		domain = directoryName(defdir)
 	)
 	if def.Meta.URL != "" {
 		d, _, err := dnsdisc.ParseURL(def.Meta.URL)
@@ -174,8 +173,10 @@ func dnsSign(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
-	key := loadSigningKey(keyfile)
+	key, err := crypto.HexToECDSA(keyStr)
+	if err != nil {
+		panic("hex of private key invalid: " + keyStr)
+	}
 	url, err := t.Sign(key, domain)
 	if err != nil {
 		return fmt.Errorf("can't sign: %v", err)
@@ -248,20 +249,6 @@ func dnsNukeRoute53(ctx *cli.Context) error {
 	}
 	client := newRoute53Client(ctx)
 	return client.deleteDomain(ctx.Args().First())
-}
-
-// loadSigningKey loads a private key in Ethereum keystore format.
-func loadSigningKey(keyfile string) *ecdsa.PrivateKey {
-	keyjson, err := os.ReadFile(keyfile)
-	if err != nil {
-		exit(fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
-	}
-	password, _ := prompt.Stdin.PromptPassword("Please enter the password for '" + keyfile + "': ")
-	key, err := keystore.DecryptKey(keyjson, password)
-	if err != nil {
-		exit(fmt.Errorf("error decrypting key: %v", err))
-	}
-	return key.PrivateKey
 }
 
 // dnsClient configures the DNS discovery client from command line flags.

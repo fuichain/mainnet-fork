@@ -219,22 +219,6 @@ func TestT8n(t *testing.T) {
 			output: t8nOutput{result: true},
 			expOut: "exp.json",
 		},
-		{ // Test post-merge transition
-			base: "./testdata/24",
-			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Merged", "",
-			},
-			output: t8nOutput{alloc: true, result: true},
-			expOut: "exp.json",
-		},
-		{ // Test post-merge transition where input is missing random
-			base: "./testdata/24",
-			input: t8nInput{
-				"alloc.json", "txs.json", "env-missingrandom.json", "Merged", "",
-			},
-			output:      t8nOutput{alloc: false, result: false},
-			expExitCode: 3,
-		},
 	} {
 
 		args := []string{"t8n"}
@@ -380,7 +364,6 @@ type b11rInput struct {
 	inEnv       string
 	inOmmersRlp string
 	inTxsRlp    string
-	inClique    string
 	ethash      bool
 	ethashMode  string
 	ethashDir   string
@@ -398,10 +381,6 @@ func (args *b11rInput) get(base string) []string {
 	}
 	if opt := args.inTxsRlp; opt != "" {
 		out = append(out, "--input.txs")
-		out = append(out, fmt.Sprintf("%v/%v", base, opt))
-	}
-	if opt := args.inClique; opt != "" {
-		out = append(out, "--seal.clique")
 		out = append(out, fmt.Sprintf("%v/%v", base, opt))
 	}
 	if args.ethash {
@@ -446,16 +425,6 @@ func TestB11r(t *testing.T) {
 				inTxsRlp:    "txs.rlp",
 			},
 			expOut: "exp.json",
-		},
-		{ // clique test seal
-			base: "./testdata/21",
-			input: b11rInput{
-				inEnv:       "header.json",
-				inOmmersRlp: "ommers.json",
-				inTxsRlp:    "txs.rlp",
-				inClique:    "clique.json",
-			},
-			expOut: "exp-clique.json",
 		},
 		{ // block with ommers
 			base: "./testdata/22",
